@@ -1,0 +1,26 @@
+import { BaseSchema } from '@adonisjs/lucid/schema';
+export default class extends BaseSchema {
+    tableName = 'post_faqs';
+    async up() {
+        if (await this.db.schema.hasTable(this.tableName))
+            return;
+        this.schema.createTable(this.tableName, (table) => {
+            table.bigIncrements('id').unsigned().notNullable();
+            table
+                .bigInteger('post_id')
+                .unsigned()
+                .notNullable()
+                .references('id')
+                .inTable('posts')
+                .onDelete('CASCADE');
+            table.text('question').notNullable();
+            table.text('answer').notNullable();
+            table.timestamp('created_at').nullable();
+            table.timestamp('updated_at').nullable();
+        });
+    }
+    async down() {
+        this.schema.dropTableIfExists(this.tableName);
+    }
+}
+//# sourceMappingURL=1768620765600_create_post_faqs_table.js.map
