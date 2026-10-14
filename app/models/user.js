@@ -18,6 +18,9 @@ import Media from '#models/media';
 export default class User extends compose(BaseModel, withAuthFinder(hash)) {
     static accessTokens = DbAccessTokensProvider.forModel(User);
     static table = 'users';
+    get twoFactorEnabled() {
+        return Boolean(this.twoFactorSecret && this.twoFactorConfirmedAt);
+    }
     verifyPassword(plainPassword) {
         const stored = this.password;
         if (!stored) {
@@ -66,6 +69,18 @@ __decorate([
     column({ serializeAs: null }),
     __metadata("design:type", Object)
 ], User.prototype, "rememberToken", void 0);
+__decorate([
+    column({ serializeAs: null }),
+    __metadata("design:type", Object)
+], User.prototype, "twoFactorSecret", void 0);
+__decorate([
+    column.dateTime(),
+    __metadata("design:type", Object)
+], User.prototype, "twoFactorConfirmedAt", void 0);
+__decorate([
+    column({ serializeAs: null }),
+    __metadata("design:type", Object)
+], User.prototype, "twoFactorRecoveryCodes", void 0);
 __decorate([
     column.dateTime({ autoCreate: true }),
     __metadata("design:type", DateTime)

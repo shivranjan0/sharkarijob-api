@@ -13,11 +13,8 @@ export default await Env.create(new URL('../', import.meta.url), {
     DB_USER: Env.schema.string(),
     DB_PASSWORD: Env.schema.string.optional(),
     DB_DATABASE: Env.schema.string(),
-    /** CA certificate (PEM) for a managed MySQL that requires TLS, e.g. Aiven. */
     DB_SSL_CA: Env.schema.string.optional(),
-    /** 'true'/'false' to force DB TLS. Unset = on for remote hosts, off for loopback. */
     DB_SSL: Env.schema.string.optional(),
-    /** Comma-separated frontend origins allowed to call this API in production. */
     CORS_ORIGINS: Env.schema.string.optional()
 });
 //# sourceMappingURL=env.js.map

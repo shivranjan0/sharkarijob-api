@@ -1494,7 +1494,7 @@ __decorate([
     __metadata("design:type", Object)
 ], SyllabusSchema.prototype, "url", void 0);
 export class UserSchema extends BaseModel {
-    static $columns = ['avatar', 'createdAt', 'email', 'emailVerifiedAt', 'id', 'isAdmin', 'name', 'password', 'rememberToken', 'updatedAt'];
+    static $columns = ['avatar', 'createdAt', 'email', 'emailVerifiedAt', 'id', 'isAdmin', 'name', 'password', 'rememberToken', 'twoFactorConfirmedAt', 'twoFactorRecoveryCodes', 'twoFactorSecret', 'updatedAt'];
     $columns = UserSchema.$columns;
 }
 __decorate([
@@ -1533,6 +1533,18 @@ __decorate([
     column(),
     __metadata("design:type", Object)
 ], UserSchema.prototype, "rememberToken", void 0);
+__decorate([
+    column.dateTime(),
+    __metadata("design:type", Object)
+], UserSchema.prototype, "twoFactorConfirmedAt", void 0);
+__decorate([
+    column(),
+    __metadata("design:type", Object)
+], UserSchema.prototype, "twoFactorRecoveryCodes", void 0);
+__decorate([
+    column(),
+    __metadata("design:type", Object)
+], UserSchema.prototype, "twoFactorSecret", void 0);
 __decorate([
     column.dateTime({ autoCreate: true, autoUpdate: true }),
     __metadata("design:type", Object)
