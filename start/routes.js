@@ -28,6 +28,7 @@ router.group(() => {
     router.get('blogs', [BlogsController, 'index']);
     router.get('blog-categories', [BlogsController, 'categories']);
     router.get('blogs/:slug', [BlogsController, 'show']);
+    router.get('reviews', [ReviewsController, 'index']);
     router.post('reviews', [ReviewsController, 'store']);
     const TwoFactorController = () => import('#controllers/two_factor_controller');
     router.group(() => {
