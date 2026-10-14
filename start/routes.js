@@ -15,6 +15,9 @@ router.get('/feed', [SeoController, 'feed']);
 router.group(() => {
     router.post('login', [AuthController, 'login']);
     router.post('login/2fa', [AuthController, 'loginTwoFactor']);
+    const GoogleAuthController = () => import('#controllers/google_auth_controller');
+    router.get('auth/google/redirect', [GoogleAuthController, 'redirect']);
+    router.get('auth/google/callback', [GoogleAuthController, 'callback']);
     router.post('register', [AuthController, 'register']);
     router.get('home', [PostsController, 'homeData']);
     router.get('posts', [PostsController, 'index']);

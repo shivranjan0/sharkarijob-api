@@ -6,6 +6,7 @@ export const controllers = {
     AdminResources: () => import('#controllers/admin_resources_controller'),
     Auth: () => import('#controllers/auth_controller'),
     Blogs: () => import('#controllers/blogs_controller'),
+    GoogleAuth: () => import('#controllers/google_auth_controller'),
     NewAccount: () => import('#controllers/new_account_controller'),
     Pages: () => import('#controllers/pages_controller'),
     Posts: () => import('#controllers/posts_controller'),

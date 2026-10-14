@@ -15,6 +15,9 @@ export default await Env.create(new URL('../', import.meta.url), {
     DB_DATABASE: Env.schema.string(),
     DB_SSL_CA: Env.schema.string.optional(),
     DB_SSL: Env.schema.string.optional(),
-    CORS_ORIGINS: Env.schema.string.optional()
+    CORS_ORIGINS: Env.schema.string.optional(),
+    GOOGLE_CLIENT_ID: Env.schema.string.optional(),
+    GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
+    GOOGLE_CALLBACK_URL: Env.schema.string.optional()
 });
 //# sourceMappingURL=env.js.map
