@@ -36,7 +36,13 @@ export default class PostsController {
             });
         }
         if (search) {
-            query = query.where('title', 'like', `%${search}%`);
+            const like = `%${search}%`;
+            query = query.where((builder) => {
+                builder
+                    .where('title', 'like', like)
+                    .orWhere('organization', 'like', like)
+                    .orWhere('short_description', 'like', like);
+            });
         }
         const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
         return response.ok(posts);
