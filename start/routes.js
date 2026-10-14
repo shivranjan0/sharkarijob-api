@@ -33,6 +33,15 @@ router.group(() => {
     router.group(() => {
         router.get('me', [AuthController, 'me']);
         router.post('logout', [AuthController, 'logout']);
+        const AccountController = () => import('#controllers/account_controller');
+        router.get('account', [AccountController, 'overview']);
+        router.put('account', [AccountController, 'updateProfile']);
+        router.post('account/password', [AccountController, 'changePassword']);
+        router.get('account/saved-jobs', [AccountController, 'savedJobs']);
+        router.post('account/saved-jobs/:postId', [AccountController, 'saveJob']);
+        router.delete('account/saved-jobs/:postId', [AccountController, 'unsaveJob']);
+        router.get('account/notifications', [AccountController, 'notifications']);
+        router.post('account/notifications/read', [AccountController, 'markNotificationsRead']);
         router.get('2fa', [TwoFactorController, 'status']);
         router.post('2fa/setup', [TwoFactorController, 'setup']);
         router.post('2fa/confirm', [TwoFactorController, 'confirm']);
