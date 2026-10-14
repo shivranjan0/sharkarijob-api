@@ -28,16 +28,47 @@ export default class AdminController {
     }
     async reviews({ request, response }) {
         const page = request.input('page', 1);
-        const limit = request.input('limit', 15);
-        const reviews = await Review.query().orderBy('createdAt', 'desc').paginate(page, limit);
-        const data = reviews.all().map((r) => ({
-            id: r.id,
-            user: r.name,
-            rating: r.rating,
-            comment: r.comment,
-            status: r.status === 'approved' ? 'Approved' : 'Pending',
-        }));
-        return response.ok(data);
+        const limit = Math.min(Number(request.input('limit', 25)), 100);
+        const status = request.input('status');
+        const query = Review.query().orderBy('createdAt', 'desc');
+        if (status === 'pending' || status === 'approved') {
+            query.where('status', status);
+        }
+        const reviews = await query.paginate(page, limit);
+        return response.ok({
+            meta: reviews.getMeta(),
+            data: reviews.all().map((r) => ({
+                id: r.id,
+                name: r.name,
+                email: r.email,
+                location: r.location,
+                rating: r.rating,
+                comment: r.comment,
+                status: r.status,
+                createdAt: r.createdAt,
+            })),
+        });
+    }
+    async updateReviewStatus({ params, request, response }) {
+        const review = await Review.find(params.id);
+        if (!review)
+            return response.notFound({ message: 'Review not found' });
+        const status = String(request.input('status', '')).trim();
+        if (status !== 'pending' && status !== 'approved') {
+            return response.unprocessableEntity({
+                message: "status must be 'pending' or 'approved'",
+            });
+        }
+        review.status = status;
+        await review.save();
+        return response.ok({ message: `Review ${status}`, id: review.id, status });
+    }
+    async destroyReview({ params, response }) {
+        const review = await Review.find(params.id);
+        if (!review)
+            return response.notFound({ message: 'Review not found' });
+        await review.delete();
+        return response.ok({ message: 'Review deleted', id: Number(params.id) });
     }
     async admins({ request, response }) {
         const page = request.input('page', 1);

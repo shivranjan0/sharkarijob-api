@@ -55,6 +55,8 @@ router.group(() => {
     router
         .group(() => {
         router.get('reviews', [AdminController, 'reviews']);
+        router.put('reviews/:id', [AdminController, 'updateReviewStatus']).as('admin.reviews.put');
+        router.delete('reviews/:id', [AdminController, 'destroyReview']);
         router.get('admins', [AdminController, 'admins']);
         router.get('dashboard', [AdminResourcesController, 'dashboard']);
         router.get('blogs', [AdminBlogsController, 'index']);
