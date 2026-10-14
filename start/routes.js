@@ -37,19 +37,29 @@ router.group(() => {
     }).use(middleware.auth({ guards: ['api'] }));
     const AdminController = () => import('#controllers/admin_controller');
     const AdminPostsController = () => import('#controllers/admin_posts_controller');
+    const AdminBlogsController = () => import('#controllers/admin_blogs_controller');
+    const AdminResourcesController = () => import('#controllers/admin_resources_controller');
     router
         .group(() => {
-        router.get('categories', [AdminController, 'categories']);
-        router.get('pages', [AdminController, 'pages']);
         router.get('reviews', [AdminController, 'reviews']);
         router.get('admins', [AdminController, 'admins']);
-        router.get('subscribers', [AdminController, 'subscribers']);
+        router.get('dashboard', [AdminResourcesController, 'dashboard']);
+        router.get('blogs', [AdminBlogsController, 'index']);
+        router.post('blogs', [AdminBlogsController, 'store']);
+        router.get('blogs/:id', [AdminBlogsController, 'show']);
+        router.put('blogs/:id', [AdminBlogsController, 'update']).as('admin.blogs.put');
+        router.delete('blogs/:id', [AdminBlogsController, 'destroy']);
         router.get('posts', [AdminPostsController, 'index']);
         router.post('posts', [AdminPostsController, 'store']);
         router.get('posts/:id', [AdminPostsController, 'show']);
         router.put('posts/:id', [AdminPostsController, 'update']).as('admin.posts.put');
         router.patch('posts/:id', [AdminPostsController, 'update']).as('admin.posts.patch');
         router.delete('posts/:id', [AdminPostsController, 'destroy']);
+        router.get(':resource', [AdminResourcesController, 'index']);
+        router.post(':resource', [AdminResourcesController, 'store']);
+        router.get(':resource/:id', [AdminResourcesController, 'show']);
+        router.put(':resource/:id', [AdminResourcesController, 'update']).as('admin.res.put');
+        router.delete(':resource/:id', [AdminResourcesController, 'destroy']);
     })
         .prefix('admin')
         .use([middleware.auth({ guards: ['api'] }), middleware.admin()]);

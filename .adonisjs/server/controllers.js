@@ -1,7 +1,9 @@
 export const controllers = {
     AccessTokens: () => import('#controllers/access_tokens_controller'),
+    AdminBlogs: () => import('#controllers/admin_blogs_controller'),
     Admin: () => import('#controllers/admin_controller'),
     AdminPosts: () => import('#controllers/admin_posts_controller'),
+    AdminResources: () => import('#controllers/admin_resources_controller'),
     Auth: () => import('#controllers/auth_controller'),
     Blogs: () => import('#controllers/blogs_controller'),
     NewAccount: () => import('#controllers/new_account_controller'),
