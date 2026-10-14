@@ -7,6 +7,12 @@ export default class AdminMiddleware {
         if (!user.isAdmin) {
             return ctx.response.forbidden({ message: 'Admin access required' });
         }
+        if (!user.twoFactorEnabled) {
+            return ctx.response.forbidden({
+                code: 'TWO_FACTOR_REQUIRED',
+                message: 'Set up two-factor authentication to use the admin panel.',
+            });
+        }
         return next();
     }
 }
