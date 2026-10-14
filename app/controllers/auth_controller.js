@@ -1,8 +1,9 @@
 import User from '#models/user';
 import TwoFactorService from '#services/two_factor_service';
+import { registerValidator, loginValidator } from '#validators/auth';
 export default class AuthController {
     async login({ request, response }) {
-        const { email, password } = request.only(['email', 'password']);
+        const { email, password } = await request.validateUsing(loginValidator);
         try {
             const user = await User.verifyCredentials(email, password);
             if (user.twoFactorEnabled) {
@@ -29,7 +30,7 @@ export default class AuthController {
         }
     }
     async register({ request, response }) {
-        const data = request.only(['name', 'email', 'password']);
+        const data = await request.validateUsing(registerValidator);
         const existingUser = await User.findBy('email', data.email);
         if (existingUser) {
             return response.badRequest({ message: 'Email already in use' });
