@@ -1,4 +1,25 @@
 import Post from '#models/post';
+const LIST_COLUMNS = [
+    'id',
+    'category_id',
+    'title',
+    'slug',
+    'short_description',
+    'organization',
+    'location',
+    'total_posts',
+    'application_start_date',
+    'application_end_date',
+    'exam_date',
+    'thumbnail',
+    'status',
+    'is_live',
+    'is_featured',
+    'is_trending',
+    'views',
+    'created_at',
+    'updated_at',
+];
 export default class PostsController {
     async index({ request, response }) {
         const page = request.input('page', 1);
@@ -6,8 +27,9 @@ export default class PostsController {
         const categoryName = request.input('category');
         const search = request.input('search');
         let query = Post.query()
+            .select(LIST_COLUMNS)
             .where('status', 'published')
-            .preload('category');
+            .preload('category', (q) => q.select('id', 'name', 'slug'));
         if (categoryName) {
             query = query.whereHas('category', (catQuery) => {
                 catQuery.where('name', categoryName);
@@ -20,8 +42,10 @@ export default class PostsController {
         return response.ok(posts);
     }
     async homeData({ response }) {
+        const preloadCategory = (query) => query.select('id', 'name', 'slug');
         const getPostsByCategory = async (categoryName, limit = 6) => {
             return Post.query()
+                .select(LIST_COLUMNS)
                 .whereHas('category', (query) => {
                 query.where('name', categoryName);
             })
@@ -30,8 +54,8 @@ export default class PostsController {
                 .limit(limit);
         };
         const [trendingPosts, featuredPosts, latestJobs, results, admitCards, answerKeys, admissions, syllabuses] = await Promise.all([
-            Post.query().where('isTrending', true).where('status', 'published').preload('category').orderBy('createdAt', 'desc').limit(10),
-            Post.query().where('isFeatured', true).where('status', 'published').preload('category').orderBy('createdAt', 'desc').limit(10),
+            Post.query().select(LIST_COLUMNS).where('isTrending', true).where('status', 'published').preload('category', preloadCategory).orderBy('createdAt', 'desc').limit(10),
+            Post.query().select(LIST_COLUMNS).where('isFeatured', true).where('status', 'published').preload('category', preloadCategory).orderBy('createdAt', 'desc').limit(10),
             getPostsByCategory('Latest Jobs', 6),
             getPostsByCategory('Results', 6),
             getPostsByCategory('Admit Card', 6),
