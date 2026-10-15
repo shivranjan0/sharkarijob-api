@@ -14,6 +14,25 @@ import PostFee from '#models/post_fee';
 import PostVacancy from '#models/post_vacancy';
 import Media from '#models/media';
 import Category from '#models/category';
+// The legacy rows were scraped from a competitor, and the scrape kept that
+// page's furniture: a leading "Name of Post:" label, a "Post Date: ..."
+// stamp, and in two cases the competitor's own brand sitting in the title.
+// Those strings are what Google shows as the title and snippet, so they are
+// stripped on read rather than left for a manual pass over 717 rows.
+//
+// Applied via the column's `consume` hook so every consumer -- the listing,
+// the single-post endpoint, the sitemap, the RSS feed and the edge worker --
+// sees the same cleaned value.
+function cleanTitle(value) {
+    if (!value)
+        return value;
+    return String(value)
+        .replace(/^\s*name of post\s*:\s*/i, '')
+        .replace(/\s*\|\s*sarkari\s*result\s*$/i, '')
+        .replace(/\s*-\s*sarkari\s*result\s*$/i, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
 export default class Post extends BaseModel {
     get cleanContent() {
         let value = this.content;
@@ -27,6 +46,12 @@ export default class Post extends BaseModel {
         value = value.replace(/SarkariResult\.com\.cm/gi, '');
         value = value.replace(/SarkariResult\.com/gi, '');
         value = value.replace(/SarkariResult/gi, '');
+        // Same scrape furniture inside the body. The "Post Date:" stamp is
+        // the competitor's publish time, not ours, and it was landing at the
+        // top of every generated meta description.
+        value = value.replace(/Name of Post\s*:\s*/gi, '');
+        value = value.replace(/Post Date\s*:\s*[A-Za-z]+ \d{1,2},? \d{4}(,? \d{1,2}:\d{2}\s*(?:am|pm))?/gi, '');
+        value = value.replace(/\|\s*Sarkari\s*Result/gi, '');
         return value;
     }
 }
@@ -43,7 +68,7 @@ __decorate([
     __metadata("design:type", Object)
 ], Post.prototype, "category", void 0);
 __decorate([
-    column(),
+    column({ consume: cleanTitle }),
     __metadata("design:type", String)
 ], Post.prototype, "title", void 0);
 __decorate([
