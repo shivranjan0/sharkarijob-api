@@ -50,7 +50,13 @@ export default class Post extends BaseModel {
         // the competitor's publish time, not ours, and it was landing at the
         // top of every generated meta description.
         value = value.replace(/Name of Post\s*:\s*/gi, '');
-        value = value.replace(/Post Date\s*:\s*[A-Za-z]+ \d{1,2},? \d{4}(,? \d{1,2}:\d{2}\s*(?:am|pm))?/gi, '');
+        // The stamp is not plain text -- it ships inside the competitor's
+        // own markup, as `<p class="gb-headline">Post Date: <time ...>Feb
+        // 27, 2024</time></p>` with the clock time in a separate span. So
+        // the elements go, not just the words.
+        value = value.replace(/<p[^>]*>\s*Post Date\s*:[\s\S]*?<\/p>/gi, '');
+        value = value.replace(/<span[^>]*class=["'][^"']*custom-post-time[^"']*["'][^>]*>[\s\S]*?<\/span>/gi, '');
+        value = value.replace(/Post Date\s*:\s*[A-Za-z]+ \d{1,2},? \d{4}(,? ?\d{1,2}:\d{2}\s*(?:am|pm))?/gi, '');
         value = value.replace(/\|\s*Sarkari\s*Result/gi, '');
         return value;
     }
