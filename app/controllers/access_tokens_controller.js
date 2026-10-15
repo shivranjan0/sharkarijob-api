@@ -1,24 +1,25 @@
-import User from '#models/user';
-import { loginValidator } from '#validators/user';
-import UserTransformer from '#transformers/user_transformer';
+// DEAD CODE -- kept only because something may still import it.
+//
+// This used to be a second, unrouted login endpoint: it called
+// User.verifyCredentials() and immediately minted an access token, with no
+// check on user.twoFactorEnabled. AuthController.login does check, and
+// AdminMiddleware refuses any admin who has not enrolled in 2FA -- so wiring
+// this controller to a route would have handed out admin-capable tokens that
+// skipped the second factor entirely.
+//
+// It is not routed in start/routes.js. Rather than leave a working 2FA
+// bypass sitting one `router.post(...)` away, it now refuses outright.
+// Delete this file; the real endpoints are POST /api/v1/login and
+// POST /api/v1/login/2fa.
 export default class AccessTokensController {
-    async store({ request, serialize }) {
-        const { email, password } = await request.validateUsing(loginValidator);
-        const user = await User.verifyCredentials(email, password);
-        const token = await User.accessTokens.create(user);
-        return serialize({
-            user: UserTransformer.transform(user),
-            token: token.value.release(),
+    async store({ response }) {
+        return response.gone({
+            message: 'This endpoint has been removed. Use POST /api/v1/login.',
         });
     }
-    async destroy({ auth }) {
-        const user = auth.getUserOrFail();
-        if (user.currentAccessToken) {
-            await User.accessTokens.delete(user, user.currentAccessToken.identifier);
-        }
-        return {
-            message: 'Logged out successfully',
-        };
+    async destroy({ response }) {
+        return response.gone({
+            message: 'This endpoint has been removed. Use POST /api/v1/logout.',
+        });
     }
 }
-//# sourceMappingURL=access_tokens_controller.js.map

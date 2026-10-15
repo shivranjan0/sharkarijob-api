@@ -13,6 +13,17 @@ const TOTP_PERIOD_SECONDS = 30;
 // API runs as a single process, and the cost of losing this on a restart is
 // just a brief re-opening of a ~30s replay window, not an auth bypass.
 const lastAcceptedTimeStep = new Map();
+// One entry per user who has ever passed a TOTP check, and nothing ever
+// removed them. An entry is only useful for the ~30s step it names, so drop
+// anything older than a couple of steps instead of holding the map open for
+// the lifetime of the process.
+const TIME_STEP_RETENTION = 4;
+function pruneTimeSteps(currentStep) {
+    for (const [uid, step] of lastAcceptedTimeStep) {
+        if (step < currentStep - TIME_STEP_RETENTION)
+            lastAcceptedTimeStep.delete(uid);
+    }
+}
 // A completed 2FA login challenge must not be reusable -- otherwise an
 // attacker who captures one valid (challenge, code) pair, or who captures
 // just the challenge, gets up to its full 10-minute lifetime to keep
@@ -61,6 +72,7 @@ export default class TwoFactorService {
             return false;
         }
         lastAcceptedTimeStep.set(user.id, timeStep);
+        pruneTimeSteps(timeStep);
         return true;
     }
     static async confirm(user, token) {

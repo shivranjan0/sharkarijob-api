@@ -170,6 +170,11 @@ export default class AdminResourcesController {
         const def = this.resolve(params.resource);
         if (!def)
             return response.notFound({ message: 'Unknown resource' });
+        // store() and update() both refuse a read-only resource; destroy()
+        // did not, which left subscribers deletable one row at a time through
+        // the generic endpoint despite being marked read-only.
+        if (def.readOnly)
+            return response.methodNotAllowed({ message: 'This list is read-only' });
         const row = await def.model.find(params.id);
         if (!row)
             return response.notFound({ message: 'Not found' });
