@@ -16,7 +16,10 @@ import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens';
 import { hasMany } from '@adonisjs/lucid/orm';
 import Media from '#models/media';
 export default class User extends compose(BaseModel, withAuthFinder(hash)) {
-    static accessTokens = DbAccessTokensProvider.forModel(User);
+    // Tokens used to live forever (expires_at was always null). Give every
+    // newly issued token a real lifetime so a leaked token doesn't stay
+    // valid indefinitely.
+    static accessTokens = DbAccessTokensProvider.forModel(User, { expiresIn: '30 days' });
     static table = 'users';
     get twoFactorEnabled() {
         return Boolean(this.twoFactorSecret && this.twoFactorConfirmedAt);
@@ -35,6 +38,17 @@ export default class User extends compose(BaseModel, withAuthFinder(hash)) {
             return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
         }
         return `${first.slice(0, 2)}`.toUpperCase();
+    }
+    // Sign the user out of every session except the one making this request
+    // (if any). Call this after a password change or a 2FA enrollment, so a
+    // token that leaked earlier -- or was minted before 2FA existed -- stops
+    // working the moment the account's security posture changes.
+    async revokeOtherAccessTokens() {
+        const current = this.currentAccessToken;
+        const tokens = await User.accessTokens.all(this);
+        await Promise.all(tokens
+            .filter((t) => !current || String(t.identifier) !== String(current.identifier))
+            .map((t) => User.accessTokens.delete(this, t.identifier)));
     }
 }
 __decorate([

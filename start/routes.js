@@ -13,12 +13,26 @@ router.get('/', () => {
 router.get('/sitemap.xml', [SeoController, 'sitemap']);
 router.get('/feed', [SeoController, 'feed']);
 router.group(() => {
-    router.post('login', [AuthController, 'login']);
-    router.post('login/2fa', [AuthController, 'loginTwoFactor']);
+    router.post('login', [AuthController, 'login']).use(middleware.rateLimit({
+        scope: 'login',
+        max: 10,
+        windowMs: 15 * 60 * 1000,
+        key: (ctx) => String(ctx.request.input('email', '')).trim().toLowerCase(),
+    }));
+    router.post('login/2fa', [AuthController, 'loginTwoFactor']).use(middleware.rateLimit({
+        scope: 'login-2fa',
+        max: 10,
+        windowMs: 15 * 60 * 1000,
+        key: (ctx) => String(ctx.request.input('challenge', '')),
+    }));
     const GoogleAuthController = () => import('#controllers/google_auth_controller');
     router.get('auth/google/redirect', [GoogleAuthController, 'redirect']);
     router.get('auth/google/callback', [GoogleAuthController, 'callback']);
-    router.post('register', [AuthController, 'register']);
+    router.post('register', [AuthController, 'register']).use(middleware.rateLimit({
+        scope: 'register',
+        max: 5,
+        windowMs: 60 * 60 * 1000,
+    }));
     router.get('home', [PostsController, 'homeData']);
     router.get('posts', [PostsController, 'index']);
     router.get('posts/:slug', [PostsController, 'show']);
@@ -45,9 +59,17 @@ router.group(() => {
         router.post('account/notifications/read', [AccountController, 'markNotificationsRead']);
         router.get('2fa', [TwoFactorController, 'status']);
         router.post('2fa/setup', [TwoFactorController, 'setup']);
-        router.post('2fa/confirm', [TwoFactorController, 'confirm']);
-        router.post('2fa/disable', [TwoFactorController, 'disable']);
-    }).use(middleware.auth({ guards: ['api'] }));
+        router.post('2fa/confirm', [TwoFactorController, 'confirm']).use(middleware.rateLimit({
+            scope: '2fa-confirm',
+            max: 10,
+            windowMs: 15 * 60 * 1000,
+        }));
+        router.post('2fa/disable', [TwoFactorController, 'disable']).use(middleware.rateLimit({
+            scope: '2fa-disable',
+            max: 10,
+            windowMs: 15 * 60 * 1000,
+        }));
+    }).use([middleware.auth({ guards: ['api'] }), middleware.noStore()]);
     const AdminController = () => import('#controllers/admin_controller');
     const AdminPostsController = () => import('#controllers/admin_posts_controller');
     const AdminBlogsController = () => import('#controllers/admin_blogs_controller');
@@ -77,7 +99,7 @@ router.group(() => {
         router.delete(':resource/:id', [AdminResourcesController, 'destroy']);
     })
         .prefix('admin')
-        .use([middleware.auth({ guards: ['api'] }), middleware.admin()]);
+        .use([middleware.auth({ guards: ['api'] }), middleware.admin(), middleware.noStore()]);
     router.get(':slug', [PagesController, 'show']);
 }).prefix('/api/v1');
 //# sourceMappingURL=routes.js.map

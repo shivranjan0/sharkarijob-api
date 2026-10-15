@@ -54,9 +54,13 @@ export default class AuthController {
     }
     async loginTwoFactor({ request, response }) {
         const { challenge, code } = request.only(['challenge', 'code']);
-        const userId = challenge ? TwoFactorService.readChallenge(String(challenge)) : null;
+        const challengeStr = challenge ? String(challenge) : null;
+        const userId = challengeStr ? TwoFactorService.readChallenge(challengeStr) : null;
         if (!userId) {
             return response.unauthorized({ message: 'This sign-in attempt expired. Start again.' });
+        }
+        if (TwoFactorService.isChallengeUsed(challengeStr)) {
+            return response.unauthorized({ message: 'This sign-in attempt already completed. Please log in again.' });
         }
         const user = await User.find(userId);
         if (!user || !user.twoFactorEnabled) {
@@ -68,6 +72,7 @@ export default class AuthController {
         if (!ok) {
             return response.unauthorized({ message: 'That code is not valid.' });
         }
+        TwoFactorService.markChallengeUsed(challengeStr);
         const token = await User.accessTokens.create(user);
         return response.ok({
             message: 'Login successful',

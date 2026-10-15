@@ -1,4 +1,5 @@
 import Post from '#models/post';
+import { safePage, safeLimit, safeString } from '#services/query_params';
 const LIST_COLUMNS = [
     'id',
     'category_id',
@@ -22,10 +23,10 @@ const LIST_COLUMNS = [
 ];
 export default class PostsController {
     async index({ request, response }) {
-        const page = request.input('page', 1);
-        const limit = request.input('limit', 15);
-        const categoryName = request.input('category');
-        const search = request.input('search');
+        const page = safePage(request.input('page', 1));
+        const limit = safeLimit(request.input('limit', 15), 15, 100);
+        const categoryName = safeString(request.input('category'));
+        const search = safeString(request.input('search'));
         let query = Post.query()
             .select(LIST_COLUMNS)
             .where('status', 'published')
@@ -85,6 +86,7 @@ export default class PostsController {
     async show({ params, response }) {
         const post = await Post.query()
             .where('slug', params.slug)
+            .where('status', 'published')
             .preload('dates')
             .preload('fees')
             .preload('vacancies')

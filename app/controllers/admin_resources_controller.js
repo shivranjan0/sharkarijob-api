@@ -7,6 +7,7 @@ import Subscriber from '#models/subscriber';
 import HomepageSection from '#models/homepage_section';
 import Review from '#models/review';
 import User from '#models/user';
+import { safePage, safeLimit, safeString } from '#services/query_params';
 const slugField = vine.string().trim().maxLength(255).optional();
 const RESOURCES = {
     categories: {
@@ -105,9 +106,9 @@ export default class AdminResourcesController {
         const def = this.resolve(params.resource);
         if (!def)
             return response.notFound({ message: 'Unknown resource' });
-        const page = request.input('page', 1);
-        const limit = Math.min(Number(request.input('limit', 50)), 200);
-        const search = String(request.input('search', '')).trim();
+        const page = safePage(request.input('page', 1));
+        const limit = safeLimit(request.input('limit', 50), 50, 200);
+        const search = safeString(request.input('search', '')) ?? '';
         const query = def.model.query();
         if (search && def.searchable.length) {
             query.where((b) => {
