@@ -87,6 +87,13 @@ export default class PostsController {
         const post = await Post.query()
             .where('slug', params.slug)
             .where('status', 'published')
+            // The index endpoint has always preloaded the category; show did
+            // not, so a single post came back with a bare categoryId and no
+            // name. Anything consuming this endpoint had no way to tell a
+            // vacancy from a result page -- which the SEO worker needs in
+            // order to decide between JobPosting and Article schema, and to
+            // build the breadcrumb trail.
+            .preload('category', (q) => q.select('id', 'name', 'slug'))
             .preload('dates')
             .preload('fees')
             .preload('vacancies')

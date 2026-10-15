@@ -2,6 +2,7 @@ import env from '#start/env';
 import Post from '#models/post';
 import Page from '#models/page';
 import Blog from '#models/blog';
+import Category from '#models/category';
 function xmlEscape(value) {
     return value
         .replace(/&/g, '&amp;')
@@ -24,17 +25,40 @@ export default class SeoController {
     }
     async sitemap({ response }) {
         const site = this.site;
-        const [posts, pages, blogs] = await Promise.all([
-            Post.query().where('status', 'published').select('slug', 'updatedAt').orderBy('updatedAt', 'desc'),
+        const [posts, pages, blogs, categories] = await Promise.all([
+            Post.query()
+                .where('status', 'published')
+                .select('slug', 'updatedAt', 'categoryId')
+                .orderBy('updatedAt', 'desc'),
             Page.query().select('slug', 'updatedAt'),
             Blog.query().where('status', 'published').select('slug', 'updatedAt'),
+            Category.query().select('id', 'name'),
         ]);
+        // The homepage and the six category hubs are the pages that actually
+        // change here -- every new notification rewrites them -- yet they
+        // were the only entries shipping without a <lastmod>, so a crawler
+        // had nothing to tell it they were worth revisiting. Derive each
+        // one's date from the newest post it lists.
+        const newest = (a, b) => (!a ? b : !b ? a : a > b ? a : b);
+        const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
+        const lastmodByRoute = new Map();
+        for (const post of posts) {
+            const route = CATEGORY_ROUTES[categoryNameById.get(post.categoryId)];
+            if (route)
+                lastmodByRoute.set(route, newest(lastmodByRoute.get(route), post.updatedAt));
+        }
+        const newestPost = posts.reduce((acc, p) => newest(acc, p.updatedAt), null);
+        const newestBlog = blogs.reduce((acc, b) => newest(acc, b.updatedAt), null);
         const entries = [
-            { loc: '/', priority: '1.0' },
+            { loc: '/', lastmod: newest(newestPost, newestBlog), priority: '1.0' },
             { loc: '/about', priority: '0.5' },
             { loc: '/contact', priority: '0.5' },
-            { loc: '/blog', priority: '0.7' },
-            ...Object.values(CATEGORY_ROUTES).map((loc) => ({ loc, priority: '0.9' })),
+            { loc: '/blog', lastmod: newestBlog, priority: '0.7' },
+            ...Object.values(CATEGORY_ROUTES).map((loc) => ({
+                loc,
+                lastmod: lastmodByRoute.get(loc) ?? null,
+                priority: '0.9',
+            })),
             ...posts.map((p) => ({ loc: `/post/${p.slug}`, lastmod: p.updatedAt, priority: '0.8' })),
             ...blogs.map((b) => ({ loc: `/blog/${b.slug}`, lastmod: b.updatedAt, priority: '0.6' })),
             ...pages.map((p) => ({ loc: `/${p.slug}`, lastmod: p.updatedAt, priority: '0.3' })),
