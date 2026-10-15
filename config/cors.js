@@ -8,7 +8,12 @@ const allowedOrigins = env
     .filter(Boolean);
 const corsConfig = defineConfig({
     enabled: true,
-    origin: app.inDev ? true : allowedOrigins,
+    // If CORS_ORIGINS is explicitly set, always honor it -- even if NODE_ENV
+    // somehow ends up as "development" on a deployed box (wrong .env copied
+    // in, deploy script misconfigured). Only fall back to the wide-open dev
+    // default when no origins have been configured at all, which is what
+    // local frontend development needs.
+    origin: allowedOrigins.length > 0 ? allowedOrigins : app.inDev,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     headers: true,
     exposeHeaders: [],

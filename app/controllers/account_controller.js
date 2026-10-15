@@ -49,7 +49,8 @@ export default class AccountController {
         }
         user.password = newPassword;
         await user.save();
-        return response.ok({ message: 'Password changed' });
+        await user.revokeOtherAccessTokens();
+        return response.ok({ message: 'Password changed. You have been signed out of your other sessions.' });
     }
     async savedJobs({ auth, request, response }) {
         const user = auth.user;

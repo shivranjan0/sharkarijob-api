@@ -81,9 +81,9 @@ if (!local && !config.password) {
   process.exit(1)
 }
 
-// Cost 10 matches what Adonis writes, so the hash is indistinguishable from
-// one created by the app itself.
-const hash = await bcrypt.hash(password, 10)
+// Cost 12 matches config/hash.js, so the hash is indistinguishable from one
+// created by the app itself.
+const hash = await bcrypt.hash(password, 12)
 
 const conn = await mysql.createConnection(config)
 console.log(`Connected to ${local ? 'local MySQL' : 'Aiven'}\n`)

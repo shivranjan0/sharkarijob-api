@@ -1,11 +1,12 @@
 import Blog from '#models/blog';
 import BlogCategory from '#models/blog_category';
+import { safePage, safeLimit, safeString } from '#services/query_params';
 export default class BlogsController {
     async index({ request, response }) {
-        const page = request.input('page', 1);
-        const limit = request.input('limit', 12);
-        const categorySlug = request.input('category');
-        const search = request.input('search');
+        const page = safePage(request.input('page', 1));
+        const limit = safeLimit(request.input('limit', 12), 12, 50);
+        const categorySlug = safeString(request.input('category'));
+        const search = safeString(request.input('search'));
         const query = Blog.query().where('status', 'published');
         if (categorySlug) {
             const category = await BlogCategory.findBy('slug', categorySlug);

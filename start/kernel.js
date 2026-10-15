@@ -16,5 +16,7 @@ router.use([
 export const middleware = router.named({
     auth: () => import('#middleware/auth_middleware'),
     admin: () => import('#middleware/admin_middleware'),
+    rateLimit: () => import('#middleware/rate_limit_middleware'),
+    noStore: () => import('#middleware/no_store_middleware'),
 });
 //# sourceMappingURL=kernel.js.map
