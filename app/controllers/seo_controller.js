@@ -47,6 +47,17 @@ export default class SeoController {
             if (route)
                 lastmodByRoute.set(route, newest(lastmodByRoute.get(route), post.updatedAt));
         }
+        // The legacy import duplicated 130 posts under a second, hex-suffixed
+        // slug. Both copies were being submitted, which asks Google to index
+        // two URLs for one page. Advertise only the clean slug; the edge
+        // redirects the suffixed one onto it. A suffixed slug with no clean
+        // twin is the only copy there is, so it stays.
+        const slugSet = new Set(posts.map((p) => p.slug));
+        const isImportedDuplicate = (slug) => {
+            const match = slug.match(/^(.*)-[0-9a-f]{10,}$/);
+            return Boolean(match && match[1] && slugSet.has(match[1]));
+        };
+        const canonicalPosts = posts.filter((p) => !isImportedDuplicate(p.slug));
         const newestPost = posts.reduce((acc, p) => newest(acc, p.updatedAt), null);
         const newestBlog = blogs.reduce((acc, b) => newest(acc, b.updatedAt), null);
         const entries = [
@@ -59,7 +70,7 @@ export default class SeoController {
                 lastmod: lastmodByRoute.get(loc) ?? null,
                 priority: '0.9',
             })),
-            ...posts.map((p) => ({ loc: `/post/${p.slug}`, lastmod: p.updatedAt, priority: '0.8' })),
+            ...canonicalPosts.map((p) => ({ loc: `/post/${p.slug}`, lastmod: p.updatedAt, priority: '0.8' })),
             ...blogs.map((b) => ({ loc: `/blog/${b.slug}`, lastmod: b.updatedAt, priority: '0.6' })),
             ...pages.map((p) => ({ loc: `/${p.slug}`, lastmod: p.updatedAt, priority: '0.3' })),
         ];
