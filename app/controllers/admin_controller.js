@@ -9,7 +9,7 @@ export default class AdminController {
         const page = safePage(request.input('page', 1));
         const limit = safeLimit(request.input('limit', 25), 25, 100);
         const status = safeString(request.input('status'));
-        const query = Review.query().orderBy('createdAt', 'desc');
+        const query = Review.query().orderBy('createdAt', 'desc').orderBy('id', 'desc');
         if (status === 'pending' || status === 'approved') {
             query.where('status', status);
         }

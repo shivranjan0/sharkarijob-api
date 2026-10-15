@@ -118,7 +118,7 @@ export default class AdminResourcesController {
                 });
             });
         }
-        const rows = await query.orderBy(def.orderBy[0], def.orderBy[1]).paginate(page, limit);
+        const rows = await query.orderBy(def.orderBy[0], def.orderBy[1]).orderBy('id', 'asc').paginate(page, limit);
         return response.ok(rows);
     }
     async show({ params, response }) {

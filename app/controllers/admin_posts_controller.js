@@ -42,7 +42,7 @@ export default class AdminPostsController {
             query.where('status', status);
         if (categoryId)
             query.where('category_id', categoryId);
-        const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
+        const posts = await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit);
         return response.ok(posts);
     }
     async show({ params, response }) {

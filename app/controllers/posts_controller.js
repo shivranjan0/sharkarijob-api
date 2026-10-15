@@ -45,7 +45,10 @@ export default class PostsController {
                     .orWhere('short_description', 'like', like);
             });
         }
-        const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
+        // createdAt is not unique across posts, and an unstable sort with
+        // OFFSET paging silently repeats some rows across pages while
+        // never returning others. The primary key breaks the tie.
+        const posts = await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit);
         return response.ok(posts);
     }
     async homeData({ response }) {

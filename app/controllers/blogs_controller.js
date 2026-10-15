@@ -20,7 +20,7 @@ export default class BlogsController {
                 builder.where('title', 'like', `%${search}%`).orWhere('description', 'like', `%${search}%`);
             });
         }
-        const blogs = await query.orderBy('createdAt', 'desc').paginate(page, limit);
+        const blogs = await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit);
         return response.ok(blogs);
     }
     async show({ params, response }) {

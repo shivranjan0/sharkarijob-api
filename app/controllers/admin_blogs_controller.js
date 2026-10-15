@@ -50,7 +50,7 @@ export default class AdminBlogsController {
                 b.where('title', 'like', `%${search}%`).orWhere('slug', 'like', `%${search}%`);
             });
         }
-        return response.ok(await query.orderBy('createdAt', 'desc').paginate(page, limit));
+        return response.ok(await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit));
     }
     async show({ params, response }) {
         const blog = await Blog.find(params.id);
