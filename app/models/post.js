@@ -43,9 +43,28 @@ export default class Post extends BaseModel {
         value = value.replace(/<img[^>]*src=["'][^"']*sarkariresult[^"']*["'][^>]*>/gis, '');
         value = value.replace(/href=["']https?:\/\/(?:www\.)?sarkariresult\.com(?:\.cm)?\/?["']/gis, 'href="/"');
         value = value.replace(/href=["']https?:\/\/(?:www\.)?sarkariresult\.com(?:\.cm)?\/([^\/]+)\/?["']/gis, 'href="/latest-job-details/$1"');
+        // The two rewrites above only match the site root and a single path
+        // segment. A deeper link -- /wp-content/uploads/2026/06/notice.pdf --
+        // fell through to the brand-stripping below, which deleted the domain
+        // from the middle of the URL and left "http:///wp-content/...": a link
+        // with no host at all. Around 39% of posts carried at least one, and
+        // they render as dead links on the page.
+        //
+        // Anything still pointing at the source site is a deep link to their
+        // files, which should not be hot-linked anyway. Drop the anchor and
+        // keep the text it wrapped.
+        value = value.replace(/<a[^>]*href=["'][^"']*sarkariresult[^"']*["'][^>]*>([\s\S]*?)<\/a>/gis, '$1');
+        // Bare URLs outside an anchor, so the brand-stripping cannot maul them.
+        value = value.replace(/https?:\/\/(?:www\.)?sarkariresult\.com(?:\.cm)?[^\s"'<>]*/gis, '');
         value = value.replace(/SarkariResult\.com\.cm/gi, '');
         value = value.replace(/SarkariResult\.com/gi, '');
         value = value.replace(/SarkariResult/gi, '');
+        // Safety net for anything that still ended up host-less, including
+        // rows where the damage was saved into the stored content.
+        value = value.replace(/<a[^>]*href=["']https?:\/\/\/[^"']*["'][^>]*>([\s\S]*?)<\/a>/gis, '$1');
+        // Where the link text was the brand itself, stripping it leaves an
+        // empty anchor -- a clickable nothing. Remove the element too.
+        value = value.replace(/<a\b[^>]*>(\s|&nbsp;)*<\/a>/gis, '');
         // Same scrape furniture inside the body. The "Post Date:" stamp is
         // the competitor's publish time, not ours, and it was landing at the
         // top of every generated meta description.
