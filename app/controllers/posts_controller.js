@@ -26,6 +26,7 @@ export default class PostsController {
         const limit = request.input('limit', 15);
         const categoryName = request.input('category');
         const search = request.input('search');
+        const sort = request.input('sort');
         let query = Post.query()
             .select(LIST_COLUMNS)
             .where('status', 'published')
@@ -44,7 +45,17 @@ export default class PostsController {
                     .orWhere('short_description', 'like', like);
             });
         }
-        const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
+        const ORDERINGS = Object.assign(Object.create(null), {
+            latest: ['createdAt', 'desc'],
+            oldest: ['createdAt', 'asc'],
+            popular: ['views', 'desc'],
+            title: ['title', 'asc'],
+        });
+        const [column, direction] = ORDERINGS[String(sort ?? '').toLowerCase()] ?? ORDERINGS.latest;
+        query = query.orderBy(column, direction);
+        if (column !== 'id')
+            query = query.orderBy('id', 'desc');
+        const posts = await query.paginate(page, limit);
         return response.ok(posts);
     }
     async homeData({ response }) {

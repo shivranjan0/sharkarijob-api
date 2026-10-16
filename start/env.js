@@ -23,6 +23,7 @@ export default await Env.create(new URL('../', import.meta.url), {
     MAIL_FROM_ADDRESS: Env.schema.string.optional(),
     MAIL_FROM_NAME: Env.schema.string.optional(),
     ADMIN_NOTIFY_EMAIL: Env.schema.string.optional(),
+    MCP_CONNECTOR_KEY: Env.schema.string.optional(),
     GOOGLE_CLIENT_ID: Env.schema.string.optional(),
     GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
     GOOGLE_CALLBACK_URL: Env.schema.string.optional()
