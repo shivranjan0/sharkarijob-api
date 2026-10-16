@@ -11,11 +11,14 @@ export default class McpController {
         const b = createHash('sha256').update(expected).digest();
         return timingSafeEqual(a, b);
     }
+    configuredKey() {
+        return String(env.get('MCP_CONNECTOR_KEY') ?? '').trim();
+    }
     authorised(params) {
-        const expected = env.get('MCP_CONNECTOR_KEY');
-        if (!expected || String(expected).length < 24)
+        const expected = this.configuredKey();
+        if (!expected || expected.length < 24)
             return false;
-        return this.keyMatches(String(params.key ?? ''), String(expected));
+        return this.keyMatches(String(params.key ?? '').trim(), expected);
     }
     rpcError(id, code, message) {
         return { jsonrpc: '2.0', id: id ?? null, error: { code, message } };
@@ -33,6 +36,16 @@ export default class McpController {
     }
     toolFailure(message) {
         return { content: [{ type: 'text', text: message }], isError: true };
+    }
+    async status({ response }) {
+        const raw = String(env.get('MCP_CONNECTOR_KEY') ?? '');
+        const key = raw.trim();
+        return response.ok({
+            configured: key.length >= 24,
+            keyLength: key.length,
+            hadSurroundingWhitespace: raw !== key,
+            endpoint: '/mcp/<key>',
+        });
     }
     async stream({ params, response }) {
         if (!this.authorised(params))

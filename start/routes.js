@@ -17,6 +17,7 @@ router
     .post('/mcp/:key', [McpController, 'handle'])
     .use(middleware.rateLimit({ scope: 'mcp', max: 240, windowMs: 60 * 1000 }));
 router.get('/mcp/:key', [McpController, 'stream']);
+router.get('/mcp', [McpController, 'status']);
 router.group(() => {
     router.post('login', [AuthController, 'login']).use([
         middleware.rateLimit({
