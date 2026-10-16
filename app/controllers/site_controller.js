@@ -1,6 +1,7 @@
 import SocialMedia from '#models/social_media';
 import Subscriber from '#models/subscriber';
 import ContactMessage from '#models/contact_message';
+import Mailer from '#services/mailer';
 import vine from '@vinejs/vine';
 const subscribeValidator = vine.compile(vine.object({
     email: vine.string().trim().email().maxLength(254),
@@ -21,13 +22,17 @@ export default class SiteController {
     }
     async contact({ request, response }) {
         const data = await request.validateUsing(contactValidator);
-        await ContactMessage.create({
+        const saved = await ContactMessage.create({
             name: data.name,
             email: data.email,
             subject: data.subject ?? null,
             message: data.message,
             isRead: false,
         });
+        await Promise.all([
+            Mailer.notifyContactMessage(saved),
+            Mailer.acknowledgeContactMessage(saved),
+        ]);
         return response.created({
             message: 'Thanks -- your message has reached us. We will reply by email.',
         });

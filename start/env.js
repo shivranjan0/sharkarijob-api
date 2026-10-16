@@ -16,6 +16,13 @@ export default await Env.create(new URL('../', import.meta.url), {
     DB_SSL_CA: Env.schema.string.optional(),
     DB_SSL: Env.schema.string.optional(),
     CORS_ORIGINS: Env.schema.string.optional(),
+    SMTP_HOST: Env.schema.string.optional(),
+    SMTP_PORT: Env.schema.number.optional(),
+    SMTP_USERNAME: Env.schema.string.optional(),
+    SMTP_PASSWORD: Env.schema.string.optional(),
+    MAIL_FROM_ADDRESS: Env.schema.string.optional(),
+    MAIL_FROM_NAME: Env.schema.string.optional(),
+    ADMIN_NOTIFY_EMAIL: Env.schema.string.optional(),
     GOOGLE_CLIENT_ID: Env.schema.string.optional(),
     GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
     GOOGLE_CALLBACK_URL: Env.schema.string.optional()
