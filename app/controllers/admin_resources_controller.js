@@ -7,7 +7,7 @@ import Subscriber from '#models/subscriber';
 import HomepageSection from '#models/homepage_section';
 import Review from '#models/review';
 import User from '#models/user';
-import { safePage, safeLimit, safeString } from '#services/query_params';
+import ContactMessage from '#models/contact_message';
 const slugField = vine.string().trim().maxLength(255).optional();
 const RESOURCES = {
     categories: {
@@ -72,6 +72,15 @@ const RESOURCES = {
         orderBy: ['created_at', 'desc'],
         readOnly: true,
     },
+    'contact-messages': {
+        model: ContactMessage,
+        schema: {
+            isRead: vine.boolean().optional(),
+        },
+        searchable: ['name', 'email', 'subject', 'message'],
+        orderBy: ['created_at', 'desc'],
+        noCreate: true,
+    },
 };
 export default class AdminResourcesController {
     resolve(name) {
@@ -106,9 +115,9 @@ export default class AdminResourcesController {
         const def = this.resolve(params.resource);
         if (!def)
             return response.notFound({ message: 'Unknown resource' });
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 50), 50, 200);
-        const search = safeString(request.input('search', '')) ?? '';
+        const page = request.input('page', 1);
+        const limit = Math.min(Number(request.input('limit', 50)), 200);
+        const search = String(request.input('search', '')).trim();
         const query = def.model.query();
         if (search && def.searchable.length) {
             query.where((b) => {
@@ -118,7 +127,7 @@ export default class AdminResourcesController {
                 });
             });
         }
-        const rows = await query.orderBy(def.orderBy[0], def.orderBy[1]).orderBy('id', 'asc').paginate(page, limit);
+        const rows = await query.orderBy(def.orderBy[0], def.orderBy[1]).paginate(page, limit);
         return response.ok(rows);
     }
     async show({ params, response }) {
@@ -134,8 +143,9 @@ export default class AdminResourcesController {
         const def = this.resolve(params.resource);
         if (!def)
             return response.notFound({ message: 'Unknown resource' });
-        if (def.readOnly)
-            return response.methodNotAllowed({ message: 'This list is read-only' });
+        if (def.readOnly || def.noCreate) {
+            return response.methodNotAllowed({ message: 'This list cannot be added to' });
+        }
         const data = await vine.compile(vine.object(def.schema)).validate(request.all());
         if (this.hasSlug(def)) {
             const source = data.slug || data.name || data.title;
@@ -170,11 +180,6 @@ export default class AdminResourcesController {
         const def = this.resolve(params.resource);
         if (!def)
             return response.notFound({ message: 'Unknown resource' });
-        // store() and update() both refuse a read-only resource; destroy()
-        // did not, which left subscribers deletable one row at a time through
-        // the generic endpoint despite being marked read-only.
-        if (def.readOnly)
-            return response.methodNotAllowed({ message: 'This list is read-only' });
         const row = await def.model.find(params.id);
         if (!row)
             return response.notFound({ message: 'Not found' });

@@ -1,9 +1,8 @@
 import Review from '#models/review';
 import { createReviewValidator } from '#validators/review';
-import { safeLimit } from '#services/query_params';
 export default class ReviewsController {
     async index({ request, response }) {
-        const limit = safeLimit(request.input('limit', 12), 12, 50);
+        const limit = Math.min(Number(request.input('limit', 12)), 50);
         const reviews = await Review.query()
             .where('status', 'approved')
             .orderBy('createdAt', 'desc')

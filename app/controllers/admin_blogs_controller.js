@@ -1,6 +1,5 @@
 import vine from '@vinejs/vine';
 import Blog from '#models/blog';
-import { safePage, safeLimit, safeString } from '#services/query_params';
 const blogFields = {
     title: vine.string().trim().minLength(3).maxLength(255),
     slug: vine.string().trim().maxLength(255).optional(),
@@ -41,16 +40,16 @@ export default class AdminBlogsController {
         }
     }
     async index({ request, response }) {
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 20), 20, 100);
-        const search = safeString(request.input('search', '')) ?? '';
+        const page = request.input('page', 1);
+        const limit = Math.min(Number(request.input('limit', 20)), 100);
+        const search = String(request.input('search', '')).trim();
         const query = Blog.query();
         if (search) {
             query.where((b) => {
                 b.where('title', 'like', `%${search}%`).orWhere('slug', 'like', `%${search}%`);
             });
         }
-        return response.ok(await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit));
+        return response.ok(await query.orderBy('createdAt', 'desc').paginate(page, limit));
     }
     async show({ params, response }) {
         const blog = await Blog.find(params.id);

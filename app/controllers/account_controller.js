@@ -1,7 +1,6 @@
 import vine from '@vinejs/vine';
 import db from '@adonisjs/lucid/services/db';
 import Post from '#models/post';
-import { safePage, safeLimit } from '#services/query_params';
 const profileValidator = vine.compile(vine.object({
     name: vine.string().trim().minLength(2).maxLength(255),
 }));
@@ -50,13 +49,12 @@ export default class AccountController {
         }
         user.password = newPassword;
         await user.save();
-        await user.revokeOtherAccessTokens();
-        return response.ok({ message: 'Password changed. You have been signed out of your other sessions.' });
+        return response.ok({ message: 'Password changed' });
     }
     async savedJobs({ auth, request, response }) {
         const user = auth.user;
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 20), 20, 50);
+        const page = Number(request.input('page', 1));
+        const limit = Math.min(Number(request.input('limit', 20)), 50);
         const rows = await db
             .from('saved_jobs')
             .where('user_id', user.id)
@@ -119,8 +117,8 @@ export default class AccountController {
     }
     async notifications({ auth, request, response }) {
         const user = auth.user;
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 20), 20, 50);
+        const page = Number(request.input('page', 1));
+        const limit = Math.min(Number(request.input('limit', 20)), 50);
         const rows = await db
             .from('notifications')
             .where('notifiable_id', user.id)

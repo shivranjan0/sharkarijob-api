@@ -2,8 +2,6 @@ import router from '@adonisjs/core/services/router';
 import server from '@adonisjs/core/services/server';
 server.errorHandler(() => import('#exceptions/handler'));
 server.use([
-    // Must stay ahead of the bodyparser (registered on the router below) so
-    // an unwanted multipart body is rejected before it is read off the wire.
     () => import('#middleware/reject_multipart_middleware'),
     () => import('#middleware/force_json_response_middleware'),
     () => import('#middleware/container_bindings_middleware'),

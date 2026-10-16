@@ -1,5 +1,4 @@
 import Post from '#models/post';
-import { safePage, safeLimit, safeString } from '#services/query_params';
 const LIST_COLUMNS = [
     'id',
     'category_id',
@@ -23,10 +22,10 @@ const LIST_COLUMNS = [
 ];
 export default class PostsController {
     async index({ request, response }) {
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 15), 15, 100);
-        const categoryName = safeString(request.input('category'));
-        const search = safeString(request.input('search'));
+        const page = request.input('page', 1);
+        const limit = request.input('limit', 15);
+        const categoryName = request.input('category');
+        const search = request.input('search');
         let query = Post.query()
             .select(LIST_COLUMNS)
             .where('status', 'published')
@@ -45,10 +44,7 @@ export default class PostsController {
                     .orWhere('short_description', 'like', like);
             });
         }
-        // createdAt is not unique across posts, and an unstable sort with
-        // OFFSET paging silently repeats some rows across pages while
-        // never returning others. The primary key breaks the tie.
-        const posts = await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit);
+        const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
         return response.ok(posts);
     }
     async homeData({ response }) {
@@ -89,14 +85,6 @@ export default class PostsController {
     async show({ params, response }) {
         const post = await Post.query()
             .where('slug', params.slug)
-            .where('status', 'published')
-            // The index endpoint has always preloaded the category; show did
-            // not, so a single post came back with a bare categoryId and no
-            // name. Anything consuming this endpoint had no way to tell a
-            // vacancy from a result page -- which the SEO worker needs in
-            // order to decide between JobPosting and Article schema, and to
-            // build the breadcrumb trail.
-            .preload('category', (q) => q.select('id', 'name', 'slug'))
             .preload('dates')
             .preload('fees')
             .preload('vacancies')

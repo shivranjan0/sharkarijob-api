@@ -35,10 +35,8 @@ export default class TwoFactorController {
         if (!recoveryCodes) {
             return response.unprocessableEntity({ message: 'That code is not valid. Try again.' });
         }
-        // Any token minted before 2FA existed must not keep bypassing it.
-        await user.revokeOtherAccessTokens();
         return response.ok({
-            message: 'Two-factor authentication enabled. Your other sessions have been signed out.',
+            message: 'Two-factor authentication enabled',
             recoveryCodes,
             warning: 'Save these now. They are shown once and each works a single time.',
         });

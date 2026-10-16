@@ -1,7 +1,6 @@
 import Post from '#models/post';
 import Category from '#models/category';
 import { createPostValidator, updatePostValidator } from '#validators/admin_post';
-import { safePage, safeLimit, safeString, safeInt } from '#services/query_params';
 export default class AdminPostsController {
     slugify(value) {
         const slug = value
@@ -27,11 +26,11 @@ export default class AdminPostsController {
         }
     }
     async index({ request, response }) {
-        const page = safePage(request.input('page', 1));
-        const limit = safeLimit(request.input('limit', 20), 20, 100);
-        const search = safeString(request.input('search'));
-        const status = safeString(request.input('status'));
-        const categoryId = safeInt(request.input('categoryId'));
+        const page = request.input('page', 1);
+        const limit = Math.min(Number(request.input('limit', 20)), 100);
+        const search = request.input('search');
+        const status = request.input('status');
+        const categoryId = request.input('categoryId');
         const query = Post.query().preload('category');
         if (search) {
             query.where((builder) => {
@@ -42,7 +41,7 @@ export default class AdminPostsController {
             query.where('status', status);
         if (categoryId)
             query.where('category_id', categoryId);
-        const posts = await query.orderBy('createdAt', 'desc').orderBy('id', 'desc').paginate(page, limit);
+        const posts = await query.orderBy('createdAt', 'desc').paginate(page, limit);
         return response.ok(posts);
     }
     async show({ params, response }) {
