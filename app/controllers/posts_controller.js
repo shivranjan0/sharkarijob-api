@@ -85,6 +85,7 @@ export default class PostsController {
     async show({ params, response }) {
         const post = await Post.query()
             .where('slug', params.slug)
+            .preload('category')
             .preload('dates')
             .preload('fees')
             .preload('vacancies')
