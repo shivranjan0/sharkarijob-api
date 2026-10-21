@@ -26,6 +26,9 @@ export default await Env.create(new URL('../', import.meta.url), {
     MCP_CONNECTOR_KEY: Env.schema.string.optional(),
     GOOGLE_CLIENT_ID: Env.schema.string.optional(),
     GOOGLE_CLIENT_SECRET: Env.schema.string.optional(),
-    GOOGLE_CALLBACK_URL: Env.schema.string.optional()
+    GOOGLE_CALLBACK_URL: Env.schema.string.optional(),
+    VAPID_PUBLIC_KEY: Env.schema.string.optional(),
+    VAPID_PRIVATE_KEY: Env.schema.string.optional(),
+    VAPID_SUBJECT: Env.schema.string.optional()
 });
 //# sourceMappingURL=env.js.map

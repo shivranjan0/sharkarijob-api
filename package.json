@@ -71,7 +71,8 @@
     "luxon": "^3.7.2",
     "mysql2": "^3.24.5",
     "otplib": "^13.5.0",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "web-push": "^3.6.7"
   },
   "hotHook": {
     "boundaries": [

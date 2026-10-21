@@ -7,6 +7,7 @@ const PostsController = () => import('#controllers/posts_controller');
 const BlogsController = () => import('#controllers/blogs_controller');
 const SeoController = () => import('#controllers/seo_controller');
 const SiteController = () => import('#controllers/site_controller');
+const PushController = () => import('#controllers/push_controller');
 router.get('/', () => {
     return { status: 'Adonis API is running' };
 });
@@ -48,6 +49,9 @@ router.group(() => {
     router.get('social-media', [SiteController, 'socialMedia']);
     router.post('contact', [SiteController, 'contact']).use(middleware.rateLimit({ scope: 'contact', max: 5, windowMs: 60 * 60 * 1000 }));
     router.post('subscribe', [SiteController, 'subscribe']).use(middleware.rateLimit({ scope: 'subscribe', max: 10, windowMs: 60 * 60 * 1000 }));
+    router.get('push/public-key', [PushController, 'publicKey']);
+    router.post('push/subscribe', [PushController, 'subscribe']).use(middleware.rateLimit({ scope: 'push-sub', max: 20, windowMs: 60 * 60 * 1000 }));
+    router.post('push/unsubscribe', [PushController, 'unsubscribe']).use(middleware.rateLimit({ scope: 'push-unsub', max: 20, windowMs: 60 * 60 * 1000 }));
     router.get('blogs', [BlogsController, 'index']);
     router.get('blog-categories', [BlogsController, 'categories']);
     router.get('blogs/:slug', [BlogsController, 'show']);

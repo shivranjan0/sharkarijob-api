@@ -167,4 +167,14 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], Post.prototype, "media", void 0);
+Post.before('save', (post) => {
+    post.$extras.announce = post.status === 'published' && (post.$isLocal || post.$original?.status !== 'published');
+});
+Post.after('save', async (post) => {
+    if (!post.$extras.announce)
+        return;
+    post.$extras.announce = false;
+    const { default: PushService } = await import('#services/push_service');
+    void PushService.notifyPost(post);
+});
 //# sourceMappingURL=post.js.map
