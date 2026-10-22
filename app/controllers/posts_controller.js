@@ -1,6 +1,7 @@
 import db from '@adonisjs/lucid/services/db';
 import Post from '#models/post';
 import { STATES } from '../lib_states.js';
+import { getPostQuality } from '../services/post_quality.js';
 const LIST_COLUMNS = [
     'id',
     'category_id',
@@ -137,10 +138,14 @@ export default class PostsController {
             .preload('vacancies')
             .preload('media')
             .firstOrFail();
+        const quality = (await getPostQuality()).get(post.slug);
         return response.ok({
             data: {
                 ...post.serialize(),
-                content: post.cleanContent
+                content: post.cleanContent,
+                canonicalSlug: quality?.canonicalSlug ?? null,
+                redirectTo: quality?.redirectTo ?? null,
+                noindex: quality?.noindex ?? false,
             }
         });
     }

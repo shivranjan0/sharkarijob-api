@@ -4,6 +4,7 @@ import Page from '#models/page';
 import Blog from '#models/blog';
 import Paper from '#models/paper';
 import { STATES } from '../lib_states.js';
+import { getPostQuality, skipInSitemap } from '../services/post_quality.js';
 function xmlEscape(value) {
     return value
         .replace(/&/g, '&amp;')
@@ -26,12 +27,14 @@ export default class SeoController {
     }
     async sitemap({ response }) {
         const site = this.site;
-        const [posts, pages, blogs, papers] = await Promise.all([
+        const quality = await getPostQuality().catch(() => new Map());
+        const [allPosts, pages, blogs, papers] = await Promise.all([
             Post.query().where('status', 'published').select('slug', 'updatedAt').orderBy('updatedAt', 'desc'),
             Page.query().select('slug', 'updatedAt'),
             Blog.query().where('status', 'published').select('slug', 'updatedAt'),
             Paper.query().where('status', 'approved').select('slug', 'exam', 'updatedAt').catch(() => []),
         ]);
+        const posts = allPosts.filter((p) => !skipInSitemap(quality.get(p.slug)));
         const exams = [...new Set(papers.map((p) => p.exam))];
         const locations = await Post.query()
             .where('status', 'published')
