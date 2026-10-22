@@ -105,7 +105,10 @@ export default class SeoController {
             '    <language>en-in</language>\n' +
             items +
             '\n  </channel>\n</rss>\n';
-        return response.header('Content-Type', 'application/rss+xml; charset=utf-8').send(body);
+        return response
+            .header('Content-Type', 'application/rss+xml; charset=utf-8')
+            .header('X-Robots-Tag', 'noindex')
+            .send(body);
     }
 }
 //# sourceMappingURL=seo_controller.js.map
