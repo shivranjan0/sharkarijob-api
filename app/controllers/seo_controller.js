@@ -30,7 +30,7 @@ export default class SeoController {
             Post.query().where('status', 'published').select('slug', 'updatedAt').orderBy('updatedAt', 'desc'),
             Page.query().select('slug', 'updatedAt'),
             Blog.query().where('status', 'published').select('slug', 'updatedAt'),
-            Paper.query().where('status', 'approved').select('slug', 'exam', 'updatedAt'),
+            Paper.query().where('status', 'approved').select('slug', 'exam', 'updatedAt').catch(() => []),
         ]);
         const exams = [...new Set(papers.map((p) => p.exam))];
         const locations = await Post.query()
