@@ -5,9 +5,35 @@ import Blog from '#models/blog';
 import BlogCategory from '#models/blog_category';
 import Page from '#models/page';
 import ContactMessage from '#models/contact_message';
+import Paper from '#models/paper';
 import env from '#start/env';
 import { renderSections, normaliseHtml, plainText } from './content_format.js';
 import { slugify, buildMetaTitle, buildMetaDescription, buildKeywords, buildSchema, } from './seo_fields.js';
+function normaliseQuestions(input) {
+    if (!Array.isArray(input) || input.length === 0)
+        throw new Error('questions must be a non-empty array');
+    return input.map((raw, i) => {
+        const n = Number(raw.n ?? i + 1);
+        const options = Array.isArray(raw.options) ? raw.options.map((o) => String(o)) : [];
+        const answer = Number(raw.answer);
+        if (options.length < 2)
+            throw new Error(`Question ${n}: needs at least two options`);
+        if (!Number.isInteger(answer) || answer < 0 || answer >= options.length) {
+            throw new Error(`Question ${n}: answer must be a 0-based index into options (0-${options.length - 1})`);
+        }
+        if (!raw.text || !raw.explanation)
+            throw new Error(`Question ${n}: text and explanation are required`);
+        return {
+            n,
+            topic: String(raw.topic ?? 'general').toLowerCase(),
+            text: String(raw.text),
+            options,
+            answer,
+            explanation: String(raw.explanation),
+            verifiedAgainstKey: Boolean(raw.verifiedAgainstKey),
+        };
+    });
+}
 const SECTION_SCHEMA = {
     type: 'array',
     description: 'The body, as the blocks this site is built from. Strongly preferred over contentHtml: ' +
@@ -742,6 +768,175 @@ export const TOOLS = [
             const { id, title, slug } = page;
             await page.delete();
             return { ok: true, deleted: { id, title, slug } };
+        },
+    },
+    {
+        name: 'list_papers',
+        title: 'List solved papers',
+        description: 'Solved previous year papers, newest first. Includes pending and rejected ones, which ' +
+            'are not public. Filter by status or exam key (e.g. "ssc-gd").',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+                exam: { type: 'string', description: 'Exam key as used in the URL, e.g. ssc-gd.' },
+            },
+        },
+        async handler(args) {
+            const rows = await Paper.query()
+                .select('id', 'slug', 'exam', 'exam_name', 'year', 'shift', 'status', 'total_questions', 'updated_at')
+                .if(args.status, (q) => q.where('status', String(args.status)))
+                .if(args.exam, (q) => q.where('exam', String(args.exam)))
+                .orderBy('id', 'desc')
+                .limit(200);
+            return rows.map((p) => ({
+                id: p.id,
+                title: `${p.examName} ${p.year}${p.shift ? ` ${p.shift}` : ''}`,
+                status: p.status,
+                questions: p.totalQuestions,
+                url: `${env.get('SITE_URL')}/papers/${p.slug}`,
+            }));
+        },
+    },
+    {
+        name: 'get_paper',
+        title: 'Get one solved paper',
+        description: 'A paper with every question, answer and explanation. Give id or slug.',
+        inputSchema: {
+            type: 'object',
+            properties: { id: { type: 'integer' }, slug: { type: 'string' } },
+        },
+        async handler(args) {
+            if (!args.id && !args.slug)
+                throw new Error('Give either id or slug');
+            const paper = await Paper.query()
+                .if(args.id, (q) => q.where('id', Number(args.id)))
+                .if(!args.id && args.slug, (q) => q.where('slug', String(args.slug)))
+                .first();
+            if (!paper)
+                throw new Error('No paper with that id or slug');
+            return paper.serialize();
+        },
+    },
+    {
+        name: 'create_paper',
+        title: 'Create a solved paper',
+        description: 'Add a solved previous year paper. It is saved as pending (hidden) unless you pass ' +
+            'status "approved". Every explanation must be written and checked by a person -- do ' +
+            'not copy explanations from other sites. answer is the 0-based index into options.',
+        inputSchema: {
+            type: 'object',
+            required: ['exam', 'examName', 'year', 'questions'],
+            properties: {
+                exam: { type: 'string', description: 'URL key, lowercase, e.g. ssc-gd.' },
+                examName: { type: 'string', description: 'Display name, e.g. SSC GD.' },
+                year: { type: 'integer' },
+                shift: { type: 'string', description: 'e.g. "Shift 1".' },
+                examDate: { type: 'string', description: 'ISO date, e.g. 2025-02-10.' },
+                markingScheme: { type: 'string', description: 'e.g. "+1 for correct, -0.25 for wrong".' },
+                pdfUrl: { type: 'string', description: 'Official PDF, shown as a download button.' },
+                uploadedBy: { type: 'string' },
+                status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+                questions: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        required: ['n', 'topic', 'text', 'options', 'answer', 'explanation'],
+                        properties: {
+                            n: { type: 'integer' },
+                            topic: { type: 'string', description: 'e.g. reasoning, gk, maths.' },
+                            text: { type: 'string' },
+                            options: { type: 'array', items: { type: 'string' } },
+                            answer: { type: 'integer', description: '0-based index into options.' },
+                            explanation: { type: 'string' },
+                            verifiedAgainstKey: { type: 'boolean' },
+                        },
+                    },
+                },
+            },
+        },
+        async handler(args) {
+            const questions = normaliseQuestions(args.questions);
+            const base = slugify([args.exam, args.year, args.shift].filter(Boolean).join(' '));
+            const paper = new Paper();
+            paper.exam = String(args.exam).trim().toLowerCase();
+            paper.examName = String(args.examName).trim();
+            paper.year = Number(args.year);
+            paper.shift = args.shift ?? null;
+            paper.examDate = args.examDate ? DateTime.fromISO(String(args.examDate)) : null;
+            paper.markingScheme = args.markingScheme ?? null;
+            paper.pdfUrl = args.pdfUrl ?? null;
+            paper.uploadedBy = args.uploadedBy ?? null;
+            paper.status = args.status ?? 'pending';
+            paper.questions = questions;
+            paper.totalQuestions = questions.length;
+            paper.slug = await uniqueSlug(Paper, base);
+            await paper.save();
+            return {
+                ok: true,
+                id: paper.id,
+                slug: paper.slug,
+                status: paper.status,
+                url: `${env.get('SITE_URL')}/papers/${paper.slug}`,
+            };
+        },
+    },
+    {
+        name: 'update_paper',
+        title: 'Update a solved paper',
+        description: 'Change a paper. Only the fields you pass are touched; passing questions replaces the ' +
+            'whole list. Set status "approved" to publish it, "pending" to hide it again.',
+        inputSchema: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+                id: { type: 'integer' },
+                examName: { type: 'string' },
+                shift: { type: 'string' },
+                examDate: { type: 'string' },
+                markingScheme: { type: 'string' },
+                pdfUrl: { type: 'string' },
+                status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+                questions: { type: 'array', description: 'Same shape as create_paper.', items: { type: 'object' } },
+            },
+        },
+        async handler(args) {
+            const paper = await Paper.find(Number(args.id));
+            if (!paper)
+                throw new Error(`No paper with id ${args.id}`);
+            if (args.examName !== undefined)
+                paper.examName = String(args.examName);
+            if (args.shift !== undefined)
+                paper.shift = args.shift;
+            if (args.examDate !== undefined)
+                paper.examDate = args.examDate ? DateTime.fromISO(String(args.examDate)) : null;
+            if (args.markingScheme !== undefined)
+                paper.markingScheme = args.markingScheme;
+            if (args.pdfUrl !== undefined)
+                paper.pdfUrl = args.pdfUrl;
+            if (args.status !== undefined)
+                paper.status = args.status;
+            if (args.questions !== undefined) {
+                paper.questions = normaliseQuestions(args.questions);
+                paper.totalQuestions = paper.questions.length;
+            }
+            await paper.save();
+            return { ok: true, id: paper.id, slug: paper.slug, status: paper.status, questions: paper.totalQuestions };
+        },
+    },
+    {
+        name: 'delete_paper',
+        title: 'Delete a solved paper',
+        description: 'Permanently remove a paper. Prefer update_paper with status "pending" to just hide it.',
+        destructive: true,
+        inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'integer' } } },
+        async handler(args) {
+            const paper = await Paper.find(Number(args.id));
+            if (!paper)
+                throw new Error(`No paper with id ${args.id}`);
+            const { id, slug } = paper;
+            await paper.delete();
+            return { ok: true, deleted: { id, slug } };
         },
     },
     {
