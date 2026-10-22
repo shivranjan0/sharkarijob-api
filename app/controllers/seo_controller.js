@@ -2,6 +2,8 @@ import env from '#start/env';
 import Post from '#models/post';
 import Page from '#models/page';
 import Blog from '#models/blog';
+import Paper from '#models/paper';
+import { STATES } from '../lib_states.js';
 function xmlEscape(value) {
     return value
         .replace(/&/g, '&amp;')
@@ -24,16 +26,38 @@ export default class SeoController {
     }
     async sitemap({ response }) {
         const site = this.site;
-        const [posts, pages, blogs] = await Promise.all([
+        const [posts, pages, blogs, papers] = await Promise.all([
             Post.query().where('status', 'published').select('slug', 'updatedAt').orderBy('updatedAt', 'desc'),
             Page.query().select('slug', 'updatedAt'),
             Blog.query().where('status', 'published').select('slug', 'updatedAt'),
+            Paper.query().where('status', 'approved').select('slug', 'exam', 'updatedAt'),
         ]);
+        const exams = [...new Set(papers.map((p) => p.exam))];
+        const locations = await Post.query()
+            .where('status', 'published')
+            .whereNotNull('location')
+            .where((b) => b.whereNull('application_end_date').orWhereRaw('application_end_date >= CURDATE()'))
+            .distinct('location')
+            .select('location');
+        const haystack = locations.map((l) => String(l.location).toLowerCase()).join('|');
+        const activeStates = Object.entries(STATES)
+            .filter(([, name]) => haystack.includes(name.toLowerCase()))
+            .map(([slug]) => slug);
         const entries = [
             { loc: '/', priority: '1.0' },
             { loc: '/about', priority: '0.5' },
             { loc: '/contact', priority: '0.5' },
             { loc: '/blog', priority: '0.7' },
+            { loc: '/tools/age-calculator', priority: '0.8' },
+            { loc: '/exam-calendar', priority: '0.8' },
+            ...activeStates.map((s) => ({ loc: `/state/${s}`, priority: '0.8' })),
+            ...(papers.length ? [{ loc: '/papers', priority: '0.8' }] : []),
+            ...exams.map((e) => ({ loc: `/papers/${e}`, priority: '0.8' })),
+            ...papers.map((p) => ({ loc: `/papers/${p.slug}`, lastmod: p.updatedAt, priority: '0.7' })),
+            ...['10th-pass', '12th-pass', 'graduate', 'iti', 'diploma'].map((q) => ({
+                loc: `/qualification/${q}`,
+                priority: '0.9',
+            })),
             ...Object.values(CATEGORY_ROUTES).map((loc) => ({ loc, priority: '0.9' })),
             ...posts.map((p) => ({ loc: `/post/${p.slug}`, lastmod: p.updatedAt, priority: '0.8' })),
             ...blogs.map((b) => ({ loc: `/blog/${b.slug}`, lastmod: b.updatedAt, priority: '0.6' })),

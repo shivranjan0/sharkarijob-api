@@ -1,4 +1,5 @@
 import Post from '#models/post';
+import { STATES } from '../lib_states.js';
 const LIST_COLUMNS = [
     'id',
     'category_id',
@@ -20,6 +21,13 @@ const LIST_COLUMNS = [
     'created_at',
     'updated_at',
 ];
+const QUALIFICATION_PATTERNS = {
+    '10th-pass': '\\b(10th|matriculation)\\b',
+    '12th-pass': '\\b(12th|intermediate|10\\+2)\\b',
+    graduate: '\\b(graduate|graduation|bachelor|degree)\\b',
+    iti: '\\b(iti)\\b',
+    diploma: '\\b(diploma)\\b',
+};
 export default class PostsController {
     async index({ request, response }) {
         const page = request.input('page', 1);
@@ -27,6 +35,10 @@ export default class PostsController {
         const categoryName = request.input('category');
         const search = request.input('search');
         const sort = request.input('sort');
+        const qualification = QUALIFICATION_PATTERNS[String(request.input('qualification', ''))];
+        const activeOnly = request.input('active') === '1';
+        const stateName = STATES[String(request.input('state', ''))];
+        const upcomingExam = request.input('upcoming_exam') === '1';
         let query = Post.query()
             .select(LIST_COLUMNS)
             .where('status', 'published')
@@ -45,10 +57,28 @@ export default class PostsController {
                     .orWhere('short_description', 'like', like);
             });
         }
+        if (qualification) {
+            query = query.where((builder) => {
+                builder
+                    .whereRaw('title REGEXP ?', [qualification])
+                    .orWhereRaw('short_description REGEXP ?', [qualification])
+                    .orWhereRaw('content REGEXP ?', [qualification]);
+            });
+        }
+        if (stateName)
+            query = query.where('location', 'like', `%${stateName}%`);
+        if (upcomingExam)
+            query = query.whereNotNull('exam_date').whereRaw('exam_date >= CURDATE()');
+        if (activeOnly) {
+            query = query.where((builder) => {
+                builder.whereNull('application_end_date').orWhereRaw('application_end_date >= CURDATE()');
+            });
+        }
         const ORDERINGS = Object.assign(Object.create(null), {
             latest: ['createdAt', 'desc'],
             oldest: ['createdAt', 'asc'],
             popular: ['views', 'desc'],
+            exam: ['examDate', 'asc'],
             title: ['title', 'asc'],
         });
         const [column, direction] = ORDERINGS[String(sort ?? '').toLowerCase()] ?? ORDERINGS.latest;

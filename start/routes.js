@@ -7,6 +7,7 @@ const PostsController = () => import('#controllers/posts_controller');
 const BlogsController = () => import('#controllers/blogs_controller');
 const SeoController = () => import('#controllers/seo_controller');
 const SiteController = () => import('#controllers/site_controller');
+const PapersController = () => import('#controllers/papers_controller');
 const PushController = () => import('#controllers/push_controller');
 router.get('/', () => {
     return { status: 'Adonis API is running' };
@@ -45,6 +46,9 @@ router.group(() => {
     router.get('home', [PostsController, 'homeData']);
     router.get('posts', [PostsController, 'index']);
     router.get('posts/:slug', [PostsController, 'show']);
+    router.get('papers', [PapersController, 'index']);
+    router.get('papers/topic/:exam/:topic', [PapersController, 'topic']);
+    router.get('papers/:slug', [PapersController, 'show']);
     router.get('pages', [PagesController, 'index']);
     router.get('social-media', [SiteController, 'socialMedia']);
     router.post('contact', [SiteController, 'contact']).use(middleware.rateLimit({ scope: 'contact', max: 5, windowMs: 60 * 60 * 1000 }));
@@ -96,6 +100,7 @@ router.group(() => {
     const AdminController = () => import('#controllers/admin_controller');
     const AdminPostsController = () => import('#controllers/admin_posts_controller');
     const AdminBlogsController = () => import('#controllers/admin_blogs_controller');
+    const AdminPapersController = () => import('#controllers/admin_papers_controller');
     const AdminResourcesController = () => import('#controllers/admin_resources_controller');
     router
         .group(() => {
@@ -115,6 +120,11 @@ router.group(() => {
         router.put('posts/:id', [AdminPostsController, 'update']).as('admin.posts.put');
         router.patch('posts/:id', [AdminPostsController, 'update']).as('admin.posts.patch');
         router.delete('posts/:id', [AdminPostsController, 'destroy']);
+        router.get('papers', [AdminPapersController, 'index']);
+        router.post('papers', [AdminPapersController, 'store']);
+        router.get('papers/:id', [AdminPapersController, 'show']);
+        router.put('papers/:id', [AdminPapersController, 'update']).as('admin.papers.put');
+        router.delete('papers/:id', [AdminPapersController, 'destroy']);
         router.get(':resource', [AdminResourcesController, 'index']);
         router.post(':resource', [AdminResourcesController, 'store']);
         router.get(':resource/:id', [AdminResourcesController, 'show']);
