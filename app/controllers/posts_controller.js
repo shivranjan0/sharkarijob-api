@@ -1,3 +1,4 @@
+import db from '@adonisjs/lucid/services/db';
 import Post from '#models/post';
 import { STATES } from '../lib_states.js';
 const LIST_COLUMNS = [
@@ -89,38 +90,42 @@ export default class PostsController {
         return response.ok(posts);
     }
     async homeData({ response }) {
-        const preloadCategory = (query) => query.select('id', 'name', 'slug');
-        const getPostsByCategory = async (categoryName, limit = 6) => {
-            return Post.query()
+        const CATEGORY_KEYS = [
+            ['Latest Jobs', 'latestJobs'],
+            ['Results', 'results'],
+            ['Admit Card', 'admitCards'],
+            ['Answer Key', 'answerKeys'],
+            ['Admission', 'admissions'],
+            ['Syllabus', 'syllabuses'],
+        ];
+        const names = CATEGORY_KEYS.map(([name]) => name);
+        const [idRows] = await db.rawQuery(`select id from (
+         select p.id, row_number() over (partition by p.category_id order by p.created_at desc, p.id desc) as rn
+         from posts p
+         where p.status = 'published'
+           and p.category_id in (select id from categories where name in (${names.map(() => '?').join(',')}))
+       ) ranked where rn <= 6
+       union
+       select id from (select id from posts where status = 'published' and is_trending = 1 order by created_at desc, id desc limit 10) t
+       union
+       select id from (select id from posts where status = 'published' and is_featured = 1 order by created_at desc, id desc limit 10) f`, names);
+        const ids = idRows.map((r) => r.id);
+        const posts = ids.length
+            ? await Post.query()
                 .select(LIST_COLUMNS)
-                .whereHas('category', (query) => {
-                query.where('name', categoryName);
-            })
-                .where('status', 'published')
+                .whereIn('id', ids)
+                .preload('category', (q) => q.select('id', 'name', 'slug'))
                 .orderBy('createdAt', 'desc')
-                .limit(limit);
-        };
-        const [trendingPosts, featuredPosts, latestJobs, results, admitCards, answerKeys, admissions, syllabuses] = await Promise.all([
-            Post.query().select(LIST_COLUMNS).where('isTrending', true).where('status', 'published').preload('category', preloadCategory).orderBy('createdAt', 'desc').limit(10),
-            Post.query().select(LIST_COLUMNS).where('isFeatured', true).where('status', 'published').preload('category', preloadCategory).orderBy('createdAt', 'desc').limit(10),
-            getPostsByCategory('Latest Jobs', 6),
-            getPostsByCategory('Results', 6),
-            getPostsByCategory('Admit Card', 6),
-            getPostsByCategory('Answer Key', 6),
-            getPostsByCategory('Admission', 6),
-            getPostsByCategory('Syllabus', 6),
-        ]);
+                .orderBy('id', 'desc')
+            : [];
+        const categories = {};
+        for (const [name, key] of CATEGORY_KEYS) {
+            categories[key] = posts.filter((p) => p.category?.name === name).slice(0, 6);
+        }
         return response.ok({
-            trendingPosts,
-            featuredPosts,
-            categories: {
-                latestJobs,
-                results,
-                admitCards,
-                answerKeys,
-                admissions,
-                syllabuses
-            }
+            trendingPosts: posts.filter((p) => p.isTrending).slice(0, 10),
+            featuredPosts: posts.filter((p) => p.isFeatured).slice(0, 10),
+            categories,
         });
     }
     async show({ params, response }) {
