@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 const STUB_WORDS = 200;
 const FULL_ARTICLE_WORDS = 400;
 const THIN_WORDS = 120;
-const SAME_TEXT = 0.85;
+const SAME_TEXT = 0.65;
 const EXPIRED_AFTER_DAYS = 30;
 const CACHE_MS = 10 * 60 * 1000;
 const NOISE = /\b(online|form|recruitment|apply|vacancy|vacancies|notification|bharti|last|date|today|start|extend|extended|available|soon|now|link|active|posts?|\d+|january|february|march|april|may|june|july|august|september|october|november|december|[0-9a-f]{10,}|updated)\b/g;
