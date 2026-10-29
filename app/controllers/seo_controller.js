@@ -34,8 +34,8 @@ export default class SeoController {
             Blog.query().where('status', 'published').select('slug', 'updatedAt'),
             Paper.query().where('status', 'approved').select('slug', 'exam', 'updatedAt').catch(() => []),
         ]);
-        const posts = allPosts.filter((p) => !skipInSitemap(quality.get(p.slug)));
-        const exams = [...new Set(papers.map((p) => p.exam))];
+        const posts = allPosts.filter((p) => p.slug && !skipInSitemap(quality.get(p.slug)));
+        const exams = [...new Set(papers.map((p) => p.exam).filter(Boolean))];
         const locations = await Post.query()
             .where('status', 'published')
             .whereNotNull('location')
@@ -46,7 +46,8 @@ export default class SeoController {
         const activeStates = Object.entries(STATES)
             .filter(([, name]) => haystack.includes(name.toLowerCase()))
             .map(([slug]) => slug);
-        const entries = [
+
+        const rawEntries = [
             { loc: '/', priority: '1.0' },
             { loc: '/about', priority: '0.5' },
             { loc: '/contact', priority: '0.5' },
@@ -66,12 +67,43 @@ export default class SeoController {
             ...blogs.map((b) => ({ loc: `/blog/${b.slug}`, lastmod: b.updatedAt, priority: '0.6' })),
             ...pages.map((p) => ({ loc: `/${p.slug}`, lastmod: p.updatedAt, priority: '0.3' })),
         ];
+
+        const DISALLOWED = new Set(['/public', '/feed', '/feed.xml', '/sitemap.xml', '/robots.txt']);
+        const seenUrls = new Set();
+        const validEntries = [];
+
+        for (const entry of rawEntries) {
+            if (!entry || !entry.loc || typeof entry.loc !== 'string') continue;
+            let path = entry.loc.trim();
+            // Disallow any query params, search strings, pagination or fragments
+            if (path.includes('?') || path.includes('&') || path.includes('#')) continue;
+            // Normalize path to start with '/'
+            if (!path.startsWith('/')) path = '/' + path;
+            const cleanPath = path === '/' ? '/' : path.replace(/\/+$/, '');
+            const lower = cleanPath.toLowerCase();
+
+            // Disallow /public/, /feed, admin, api, or private paths
+            if (DISALLOWED.has(lower) || lower.startsWith('/public/') || lower.startsWith('/feed/') || lower.startsWith('/admin') || lower.startsWith('/api/') || lower.startsWith('/auth/')) {
+                continue;
+            }
+
+            const fullUrl = `${site}${cleanPath}`;
+            if (seenUrls.has(fullUrl)) continue;
+            seenUrls.add(fullUrl);
+
+            validEntries.push({
+                loc: fullUrl,
+                lastmod: entry.lastmod,
+                priority: entry.priority,
+            });
+        }
+
         const body = '<?xml version="1.0" encoding="UTF-8"?>\n' +
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-            entries
+            validEntries
                 .map((e) => {
                 const lastmod = e.lastmod ? `\n    <lastmod>${e.lastmod.toISODate()}</lastmod>` : '';
-                return `  <url>\n    <loc>${xmlEscape(site + e.loc)}</loc>${lastmod}\n    <priority>${e.priority}</priority>\n  </url>`;
+                return `  <url>\n    <loc>${xmlEscape(e.loc)}</loc>${lastmod}\n    <priority>${e.priority}</priority>\n  </url>`;
             })
                 .join('\n') +
             '\n</urlset>\n';

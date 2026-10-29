@@ -1,0 +1,25 @@
+User-agent: *
+Disallow: /public/
+Disallow: /admin-panel/
+Disallow: /admin/
+Disallow: /secure/
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /forgot-password
+Disallow: /verify-otp
+Disallow: /reset-password
+Disallow: /dashboard
+Disallow: /notifications
+Disallow: /profile/
+Disallow: /saved-jobs/
+Disallow: /subscribe
+Disallow: /search/live
+Disallow: /*?search=*
+Disallow: /*?sort=*
+Disallow: /*&page=*
+Disallow: /*?page=*
+Allow: /
+
+Sitemap: https://sharkarijob.online/sitemap.xml

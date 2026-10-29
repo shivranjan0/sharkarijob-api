@@ -14,6 +14,22 @@ router.get('/', () => {
 });
 router.get('/sitemap.xml', [SeoController, 'sitemap']);
 router.get('/feed', [SeoController, 'feed']);
+router.get('/robots.txt', ({ response }) => {
+    return response.header('Content-Type', 'text/plain; charset=utf-8').send(`User-agent: *
+Disallow: /public/
+Disallow: /admin-panel/
+Disallow: /*?search=*
+Disallow: /*?sort=*
+Disallow: /*&page=*
+Disallow: /*?page=*
+Allow: /
+
+Sitemap: https://sharkarijob.online/sitemap.xml
+`);
+});
+router.any('/public*', ({ response }) => {
+    return response.header('X-Robots-Tag', 'noindex, nofollow').status(404).send('Not Found');
+});
 const McpController = () => import('#controllers/mcp_controller');
 router
     .post('/mcp/:key', [McpController, 'handle'])
