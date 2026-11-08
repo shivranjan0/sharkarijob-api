@@ -4,6 +4,26 @@ export function districtSlug(name) {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 }
+export const DISTRICT_ALIASES = {
+    'Mumbai City': ['Mumbai'],
+    'Mumbai Suburban': ['Mumbai'],
+    Prayagraj: ['Allahabad'],
+    'Chhatrapati Sambhajinagar': ['Aurangabad'],
+    Dharashiv: ['Osmanabad'],
+    'Bengaluru Urban': ['Bangalore', 'Bengaluru'],
+    'Bengaluru Rural': ['Bangalore Rural', 'Bengaluru Rural'],
+    Gurugram: ['Gurgaon'],
+    Kalaburagi: ['Gulbarga'],
+    Mysuru: ['Mysore'],
+    Vijayapura: ['Bijapur'],
+    Belagavi: ['Belgaum'],
+    Mangaluru: ['Mangalore'],
+    Shivamogga: ['Shimoga'],
+    Tumakuru: ['Tumkur'],
+    Hubballi: ['Hubli'],
+    Vadodara: ['Baroda'],
+    'Ahmedabad': ['Amdavad'],
+};
 export const DISTRICTS = {
     gujarat: ['Ahmedabad', 'Amreli', 'Anand', 'Aravalli', 'Banaskantha', 'Bharuch', 'Bhavnagar', 'Botad', 'Chhota Udaipur', 'Dahod', 'Dang', 'Devbhoomi Dwarka', 'Gandhinagar', 'Gir Somnath', 'Jamnagar', 'Junagadh', 'Kheda', 'Kutch', 'Mahisagar', 'Mehsana', 'Morbi', 'Narmada', 'Navsari', 'Panchmahal', 'Patan', 'Porbandar', 'Rajkot', 'Sabarkantha', 'Surat', 'Surendranagar', 'Tapi', 'Vadodara', 'Valsad'],
     maharashtra: ['Ahmednagar', 'Akola', 'Amravati', 'Beed', 'Bhandara', 'Buldhana', 'Chandrapur', 'Chhatrapati Sambhajinagar', 'Dhule', 'Gadchiroli', 'Gondia', 'Hingoli', 'Jalgaon', 'Jalna', 'Kolhapur', 'Latur', 'Mumbai City', 'Mumbai Suburban', 'Nagpur', 'Nanded', 'Nandurbar', 'Nashik', 'Dharashiv', 'Palghar', 'Parbhani', 'Pune', 'Raigad', 'Ratnagiri', 'Sangli', 'Satara', 'Sindhudurg', 'Solapur', 'Thane', 'Wardha', 'Washim', 'Yavatmal'],

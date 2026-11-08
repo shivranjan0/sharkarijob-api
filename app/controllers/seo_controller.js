@@ -4,7 +4,7 @@ import Page from '#models/page';
 import Blog from '#models/blog';
 import Paper from '#models/paper';
 import { STATES } from '../lib_states.js';
-import { DISTRICTS, districtSlug } from '../lib_districts.js';
+import { DISTRICTS, DISTRICT_ALIASES, districtSlug } from '../lib_districts.js';
 import { getPostQuality, skipInSitemap } from '../services/post_quality.js';
 function xmlEscape(value) {
     return value
@@ -48,7 +48,10 @@ export default class SeoController {
             .filter(([, name]) => haystack.includes(name.toLowerCase()))
             .map(([slug]) => slug);
         const activeDistricts = activeStates.flatMap((stateSlug) => (DISTRICTS[stateSlug] || [])
-            .filter((name) => haystack.includes(name.toLowerCase()))
+            .filter((name) => {
+                const names = [name, ...(DISTRICT_ALIASES[name] || [])];
+                return names.some((n) => haystack.includes(n.toLowerCase()));
+            })
             .map((name) => `/state/${stateSlug}/${districtSlug(name)}`));
 
         const rawEntries = [

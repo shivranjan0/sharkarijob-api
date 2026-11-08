@@ -1,6 +1,7 @@
 import db from '@adonisjs/lucid/services/db';
 import Post from '#models/post';
 import { STATES } from '../lib_states.js';
+import { DISTRICT_ALIASES } from '../lib_districts.js';
 import { getPostQuality } from '../services/post_quality.js';
 const LIST_COLUMNS = [
     'id',
@@ -70,8 +71,13 @@ export default class PostsController {
         }
         if (stateName)
             query = query.where('location', 'like', `%${stateName}%`);
-        if (districtName)
-            query = query.where('location', 'like', `%${districtName}%`);
+        if (districtName) {
+            const names = [districtName, ...(DISTRICT_ALIASES[String(districtName)] || [])];
+            query = query.where((builder) => {
+                for (const name of names)
+                    builder.orWhere('location', 'like', `%${name}%`);
+            });
+        }
         if (upcomingExam)
             query = query.whereNotNull('exam_date').whereRaw('exam_date >= CURDATE()');
         if (activeOnly) {
