@@ -4,6 +4,7 @@ import Page from '#models/page';
 import Blog from '#models/blog';
 import Paper from '#models/paper';
 import { STATES } from '../lib_states.js';
+import { DISTRICTS, districtSlug } from '../lib_districts.js';
 import { getPostQuality, skipInSitemap } from '../services/post_quality.js';
 function xmlEscape(value) {
     return value
@@ -46,6 +47,9 @@ export default class SeoController {
         const activeStates = Object.entries(STATES)
             .filter(([, name]) => haystack.includes(name.toLowerCase()))
             .map(([slug]) => slug);
+        const activeDistricts = activeStates.flatMap((stateSlug) => (DISTRICTS[stateSlug] || [])
+            .filter((name) => haystack.includes(name.toLowerCase()))
+            .map((name) => `/state/${stateSlug}/${districtSlug(name)}`));
 
         const rawEntries = [
             { loc: '/', priority: '1.0' },
@@ -55,6 +59,7 @@ export default class SeoController {
             { loc: '/tools/age-calculator', priority: '0.8' },
             { loc: '/exam-calendar', priority: '0.8' },
             ...activeStates.map((s) => ({ loc: `/state/${s}`, priority: '0.8' })),
+            ...activeDistricts.map((loc) => ({ loc, priority: '0.7' })),
             ...(papers.length ? [{ loc: '/papers', priority: '0.8' }] : []),
             ...exams.map((e) => ({ loc: `/papers/${e}`, priority: '0.8' })),
             ...papers.map((p) => ({ loc: `/papers/${p.slug}`, lastmod: p.updatedAt, priority: '0.7' })),

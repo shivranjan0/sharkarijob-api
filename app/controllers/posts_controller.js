@@ -40,6 +40,7 @@ export default class PostsController {
         const qualification = QUALIFICATION_PATTERNS[String(request.input('qualification', ''))];
         const activeOnly = request.input('active') === '1';
         const stateName = STATES[String(request.input('state', ''))];
+        const districtName = request.input('district');
         const upcomingExam = request.input('upcoming_exam') === '1';
         let query = Post.query()
             .select(LIST_COLUMNS)
@@ -69,6 +70,8 @@ export default class PostsController {
         }
         if (stateName)
             query = query.where('location', 'like', `%${stateName}%`);
+        if (districtName)
+            query = query.where('location', 'like', `%${districtName}%`);
         if (upcomingExam)
             query = query.whereNotNull('exam_date').whereRaw('exam_date >= CURDATE()');
         if (activeOnly) {
