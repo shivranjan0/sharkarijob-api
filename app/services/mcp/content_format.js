@@ -134,6 +134,7 @@ const COMPETITORS = /sarkariresult\.com(\.cm)?|sarkariresult|sarkarijob\.bluraj\
 export function normaliseHtml(html) {
     const notes = [];
     let out = String(html ?? '');
+    out = out.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const drop = (pattern, note) => {
         const before = out;
         out = out.replace(pattern, '');

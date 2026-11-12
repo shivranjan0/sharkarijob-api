@@ -30,6 +30,12 @@ export default class BlogsController {
         if (!blog) {
             return response.notFound({ message: 'Blog not found' });
         }
+        if (blog.content) {
+            blog.content = blog.content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        }
+        if (blog.tableOfContents) {
+            blog.tableOfContents = blog.tableOfContents.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        }
         return response.ok({ data: blog });
     }
     async categories({ response }) {
